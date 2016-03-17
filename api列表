@@ -1,0 +1,245 @@
+create
+CreateFile("d:\\create.txt",GENERIC_READ|GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+return 0;
+
+
+openInput
+testFile.open("d:\\create.txt", ofstream::out | ofstream::app);
+testFile << "test";
+testFile.close();
+return 0;
+
+deleteFile
+	DeleteFile("d:\\test.txt");
+
+changeAttr
+	SetFileAttributes("d:\\create.txt", FILE_ATTRIBUTE_HIDDEN);
+
+copyFile
+	CopyFile("d:\\create.txt", "d:\\createCopy.txt", NULL);
+
+createDir
+	CreateDirectory("d:\\test", NULL);
+
+removeDir
+	RemoveDirectory("d:\\test");
+
+fileMapping
+	CreateFileMapping((HANDLE)0xFFFFFFFF, NULL, PAGE_READWRITE, 0, 2048, NULL);
+
+findFirstFile
+	WIN32_FIND_DATA lpData;
+	FindFirstFile("d:\\test", &lpData);
+
+findNextFile
+	WIN32_FIND_DATA lpData;
+	HANDLE h = FindFirstFile("d:\\test", &lpData);
+	FindNextFile(h, &lpData);
+	
+regCreateKey
+	HKEY my_hkey;
+	RegCreateKey(HKEY_LOCAL_MACHINE, "Software\\Microsoft\\Windows\\CurrentVersion\\Run1", &my_hkey);
+
+regDeleteKey
+RegDeleteKey(HKEY_LOCAL_MACHINE, "Software\\Microsoft\\Windows\\CurrentVersion\\Run1");
+
+setKeyValue
+	RegSetKeyValue(HKEY_LOCAL_MACHINE, "Software\\Microsoft\\Windows\\CurrentVersion\\Run", "test", REG_SZ, "d:\\create.txt", 14);
+
+deleteKeyValue
+	RegDeleteKeyValue(HKEY_LOCAL_MACHINE, "Software\\Microsoft\\Windows\\CurrentVersion\\Run", "test");
+
+openKey	
+	HKEY my_hkey;
+	RegOpenKey(HKEY_LOCAL_MACHINE, "SOFTWARE\MICROSOFT", &my_hkey);
+
+closeKey
+	HKEY my_hkey;
+	RegOpenKey(HKEY_LOCAL_MACHINE, "SOFTWARE\\MICROSOFT", &my_hkey);
+	RegCloseKey(my_hkey);
+
+enumKey
+	CHAR test[256];
+	RegEnumKey(HKEY_LOCAL_MACHINE, 0, test, 100);
+
+enumValue
+	CHAR test[256];
+	DWORD ccTest = 256;
+	RegEnumValue(HKEY_LOCAL_MACHINE, 0, test, &ccTest, NULL, NULL, NULL, NULL);
+
+queryValue
+	char test[256];
+	LONG longTest = 256;
+	RegQueryValue(HKEY_LOCAL_MACHINE, "Software\\Microsoft\\Windows\\CurrentVersion\\Run", test, &longTest);
+
+createProcess
+	STARTUPINFO si;
+	memset(&si, 0, sizeof(STARTUPINFO));//初始化si在内存块中的值（详见memset函数）
+	si.cb = sizeof(STARTUPINFO);
+	si.dwFlags = STARTF_USESHOWWINDOW;
+	si.wShowWindow = SW_SHOW;
+	PROCESS_INFORMATION pi;//必备参数设置结束
+	CreateProcess("c:\\windows\\system32\\notepad.exe", NULL, NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi);
+
+exitProcess(只能退出当前进程）
+	ExitProcess(1);
+
+terminateProcess
+	HANDLE handle = GetCurrentProcess();
+	TerminateProcess(handle, 0);
+	
+createThread（要先创建一个线程函数，再调用，同时等待线程创建（否则程序会一创建线程就退出））
+	DWORD WINAPI myThread(LPVOID lpParam)
+	{
+		printf("test");
+		return 0;
+	}
+	int function()
+	{
+		DWORD threadID;
+		HANDLE handle = CreateThread(NULL, 0, myThread, NULL, 0, &threadID);
+		WaitForSingleObject(handle, INFINITE);
+		return 0;
+	}
+	
+createRemoteThread
+	DWORD WINAPI myThread(LPVOID lpParam)
+	{
+		printf("test");
+		return 0;
+	}
+	int function()
+	{
+		HANDLE hProcess = OpenProcess(PROCESS_CREATE_THREAD | PROCESS_VM_OPERATION | PROCESS_VM_WRITE | PROCESS_VM_READ, FALSE, 9800);
+		DWORD threadID;
+		HANDLE handle = CreateRemoteThread(hProcess, 0, 0, myThread, 0, 0, &threadID);
+		WaitForSingleObject(handle, INFINITE);
+		return 0;
+	}
+
+createProcessAsUser
+	STARTUPINFO             si;
+	PROCESS_INFORMATION pi;
+
+	memset(&si, 0, sizeof(si));
+	memset(&pi, 0, sizeof(pi));
+	si.cb = sizeof(si);
+
+	CreateProcessAsUser(NULL, "c:\\windows\\notepad.exe", NULL, 0, 0, FALSE, NULL, 0, 0, &si, &pi);
+	return 0;
+	
+enumProcesses
+	DWORD aProcesses[1024], cbNeeded;
+	EnumProcesses(aProcesses, sizeof(aProcesses), &cbNeeded);
+
+CreateToolhelp32Snapshot&closeHandle
+	HANDLE hProcessSnap;
+	hProcessSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+	CloseHandle(hProcessSnap);
+	
+CreateToolhelp32Snapshot&closeHandle&process32First&process32Next
+	HANDLE hProcessSnap;
+	PROCESSENTRY32 pe32;
+	pe32.dwSize = sizeof(PROCESSENTRY32);
+	hProcessSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+	Process32First(hProcessSnap, &pe32);
+	Process32Next(hProcessSnap, &pe32);
+	CloseHandle(hProcessSnap);
+
+getProcAddress
+	GetProcAddress(LoadLibrary("ntdll.dll"), "function");
+
+
+
+openProcessToken
+	HANDLE hToken = NULL;
+	OpenProcessToken(GetCurrentProcess(), TOKEN_DUPLICATE, &hToken);
+
+createProcessWithTokenW
+	LPSTARTUPINFOW             si;
+	PROCESS_INFORMATION pi;
+
+	memset(&si, 0, sizeof(si));
+	memset(&pi, 0, sizeof(pi));
+	//si.cb = sizeof(si);
+
+	HANDLE hToken = NULL;
+	OpenProcessToken(GetCurrentProcess(), TOKEN_DUPLICATE, &hToken);
+	CreateProcessWithTokenW(hToken, LOGON_WITH_PROFILE, L"c:\\windows\\notepad.exe", 0, NULL, NULL, NULL, si, &pi);
+
+openThreadToken
+	HANDLE hToken = NULL;
+	OpenThreadToken(GetCurrentThread(), TOKEN_ALL_ACCESS, TRUE, &hToken);
+
+AdjustTokenPrivileges
+	HANDLE hToken = NULL;
+	OpenThreadToken(GetCurrentThread(), TOKEN_ALL_ACCESS, TRUE, &hToken);
+	AdjustTokenPrivileges(hToken, TRUE, NULL, NULL, NULL, NULL);
+
+getTokenInformation
+	HANDLE hToken = NULL;
+	DWORD dwLength=100;
+	PTOKEN_GROUPS ptg = (PTOKEN_GROUPS)HeapAlloc(GetProcessHeap(),HEAP_ZERO_MEMORY, dwLength);
+	OpenThreadToken(GetCurrentThread(), TOKEN_ALL_ACCESS, TRUE, &hToken);
+	GetTokenInformation(hToken, TokenGroups, (LPVOID)ptg, 0, &dwLength);
+	
+duplicateToken
+	HANDLE hToken = NULL;
+	HANDLE hDuplicated;
+	OpenThreadToken(GetCurrentThread(), TOKEN_ALL_ACCESS, TRUE, &hToken);
+	DuplicateToken(hToken, SecurityImpersonation, &hDuplicated);
+	
+	
+	
+	
+以下的服务类api公用下面的数据
+TCHAR szServiceName[] = "ServiceTest";
+	SERVICE_STATUS_HANDLE hServiceStatus;
+	SERVICE_STATUS status;
+	DWORD dwThreadID;
+	SC_HANDLE hSCM;
+	
+	hServiceStatus = NULL;
+	status.dwServiceType = SERVICE_WIN32_OWN_PROCESS;
+	status.dwCurrentState = SERVICE_STOPPED;
+	status.dwControlsAccepted = SERVICE_ACCEPT_STOP;
+	status.dwWin32ExitCode = 0;
+	status.dwServiceSpecificExitCode = 0;
+	status.dwCheckPoint = 0;
+	status.dwWaitHint = 0;
+	
+下面是所有服务类功能集合在一起
+	TCHAR szServiceName[] = "ServiceTest";
+	SERVICE_STATUS_HANDLE hServiceStatus;
+	SERVICE_STATUS status;
+	DWORD dwThreadID;
+
+	hServiceStatus = NULL;
+	status.dwServiceType = SERVICE_WIN32_OWN_PROCESS;
+	status.dwCurrentState = SERVICE_STOPPED;
+	status.dwControlsAccepted = SERVICE_ACCEPT_STOP;
+	status.dwWin32ExitCode = 0;
+	status.dwServiceSpecificExitCode = 0;
+	status.dwCheckPoint = 0;
+	status.dwWaitHint = 0;
+	SC_HANDLE hSCM;
+
+	hSCM = OpenSCManager(NULL,NULL,SC_MANAGER_ALL_ACCESS);
+	CreateService(hSCM, szServiceName, szServiceName, SERVICE_ALL_ACCESS, SERVICE_WIN32_OWN_PROCESS, SERVICE_DEMAND_START, SERVICE_ERROR_NORMAL, "c:\\windows\\notepad.exe", NULL, NULL, "", NULL, NULL);
+	SC_HANDLE hService = OpenService(hSCM, szServiceName, SERVICE_STOP | DELETE);
+	ControlService(hService, SERVICE_CONTROL_STOP, &status);
+	DeleteService(hService);
+
+服务类api
+openSCManager	
+	hSCM = OpenSCManager(NULL, NULL, SC_MANAGER_ALL_ACCESS);
+	
+createService
+	CreateService(hSCM, szServiceName, szServiceName, SERVICE_ALL_ACCESS, SERVICE_WIN32_OWN_PROCESS, SERVICE_DEMAND_START, SERVICE_ERROR_NORMAL, "c:\\windows\\notepad.exe", NULL, NULL, "", NULL, NULL);
+
+openService
+	SC_HANDLE hService = OpenService(hSCM, szServiceName, SERVICE_STOP | DELETE);
+
+ControlService(下面是其中的停止service功能）
+	ControlService(hService, SERVICE_CONTROL_STOP, &status);
+
